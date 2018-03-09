@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
         txt2 = findViewById(R.id.textView2);
         txt3 = findViewById(R.id.textView3);
 
-
+        findViewById(R.id.stopButton).setEnabled(false);
         findViewById(R.id.startButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -68,9 +68,45 @@ public class MainActivity extends AppCompatActivity {
                 mSensorManager.registerListener(mMagnetLis, mMagnet, SensorManager.SENSOR_DELAY_FASTEST);
 
                 LogInit();
+                findViewById(R.id.stopButton).setEnabled(true);
+                findViewById(R.id.startButton).setEnabled(false);
+                findViewById(R.id.normalButton).setEnabled(false);
+                findViewById(R.id.slowButton).setEnabled(false);
             }
         });
 
+
+        findViewById(R.id.slowButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mSensorManager.registerListener(mAccelLis, mAccel, SensorManager.SENSOR_DELAY_NORMAL);
+                mSensorManager.registerListener(mGyroLis, mGyro, SensorManager.SENSOR_DELAY_NORMAL);
+                mSensorManager.registerListener(mMagnetLis, mMagnet, SensorManager.SENSOR_DELAY_NORMAL);
+
+                LogInit();
+                findViewById(R.id.stopButton).setEnabled(true);
+                findViewById(R.id.startButton).setEnabled(false);
+                findViewById(R.id.normalButton).setEnabled(false);
+                findViewById(R.id.slowButton).setEnabled(false);
+
+            }
+        });
+        findViewById(R.id.normalButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mSensorManager.registerListener(mAccelLis, mAccel, SensorManager.SENSOR_DELAY_UI);
+                mSensorManager.registerListener(mGyroLis, mGyro, SensorManager.SENSOR_DELAY_UI);
+                mSensorManager.registerListener(mMagnetLis, mMagnet, SensorManager.SENSOR_DELAY_UI);
+
+                LogInit();
+
+                findViewById(R.id.stopButton).setEnabled(true);
+                findViewById(R.id.startButton).setEnabled(false);
+                findViewById(R.id.normalButton).setEnabled(false);
+                findViewById(R.id.slowButton).setEnabled(false);
+
+            }
+        });
         findViewById(R.id.stopButton).setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -78,6 +114,11 @@ public class MainActivity extends AppCompatActivity {
                 mSensorManager.unregisterListener(mAccelLis);
                 mSensorManager.unregisterListener(mGyroLis);
                 mSensorManager.unregisterListener(mMagnetLis);
+
+                findViewById(R.id.stopButton).setEnabled(false);
+                findViewById(R.id.startButton).setEnabled(true);
+                findViewById(R.id.normalButton).setEnabled(true);
+                findViewById(R.id.slowButton).setEnabled(true);
 
                 try {
                     accelWriter.close();
