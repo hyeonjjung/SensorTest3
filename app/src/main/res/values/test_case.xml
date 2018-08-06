@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="test_case">
+        <item>DashBoard</item>
+        <item>Driver</item>
+        <item>Passenger</item>
+        <item>BackSeat</item>
+    </string-array>
+</resources>

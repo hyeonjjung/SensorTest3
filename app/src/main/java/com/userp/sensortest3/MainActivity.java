@@ -10,13 +10,22 @@ import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity{
+
+    private static final String TAG = "MainActivity";
+    private static final int MAGNETOMETER_DELAY = 10000;
+    private static final int ACCELEROMETER_DELAY = 5000;
+    private static final int GYROSCOPE_DELAY = 5000;
 
     private SensorManager mSensorManager = null;
 
@@ -39,6 +48,12 @@ public class MainActivity extends AppCompatActivity {
     FileWriter gyroWriter;
     FileWriter magneticWriter;
 
+    Button startBtn;
+    Button stopBtn;
+
+    String testCase = null;
+
+    Spinner spinner = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,67 +73,61 @@ public class MainActivity extends AppCompatActivity {
         txt2 = findViewById(R.id.textView2);
         txt3 = findViewById(R.id.textView3);
 
+        startBtn = (Button) findViewById(R.id.startButton);
+        stopBtn = (Button) findViewById(R.id.stopButton);
+
+        spinner = (Spinner) findViewById(R.id.spinner);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.test_case, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                testCase = adapterView.getItemAtPosition(i).toString();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
+
+        Button.OnClickListener mClickListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                stopBtn.setEnabled(true);
+                startBtn.setEnabled(false);
+                spinner.setEnabled(false);
+
+                mSensorManager.registerListener(mAccelLis, mAccel, ACCELEROMETER_DELAY);
+                mSensorManager.registerListener(mGyroLis, mGyro, GYROSCOPE_DELAY);
+                mSensorManager.registerListener(mMagnetLis, mMagnet, MAGNETOMETER_DELAY);
+
+                LogInit();
+                try {
+                    accelWriter = new FileWriter(new File(logDirectory, "A_"+testCase+"_"+System.currentTimeMillis()+".csv"));
+                    gyroWriter = new FileWriter(new File(logDirectory, "G_"+testCase+"_"+System.currentTimeMillis()+".csv"));
+                    magneticWriter = new FileWriter(new File(logDirectory, "M_"+testCase+"_"+System.currentTimeMillis()+".csv"));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        startBtn.setOnClickListener(mClickListener);
+
         findViewById(R.id.stopButton).setEnabled(false);
-        findViewById(R.id.startButton).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                mSensorManager.registerListener(mAccelLis, mAccel, SensorManager.SENSOR_DELAY_FASTEST);
-                mSensorManager.registerListener(mGyroLis, mGyro, SensorManager.SENSOR_DELAY_FASTEST);
-                mSensorManager.registerListener(mMagnetLis, mMagnet, SensorManager.SENSOR_DELAY_FASTEST);
-
-                LogInit();
-                findViewById(R.id.stopButton).setEnabled(true);
-                findViewById(R.id.startButton).setEnabled(false);
-                findViewById(R.id.normalButton).setEnabled(false);
-                findViewById(R.id.slowButton).setEnabled(false);
-            }
-        });
-
-
-        findViewById(R.id.slowButton).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mSensorManager.registerListener(mAccelLis, mAccel, SensorManager.SENSOR_DELAY_NORMAL);
-                mSensorManager.registerListener(mGyroLis, mGyro, SensorManager.SENSOR_DELAY_NORMAL);
-                mSensorManager.registerListener(mMagnetLis, mMagnet, SensorManager.SENSOR_DELAY_NORMAL);
-
-                LogInit();
-                findViewById(R.id.stopButton).setEnabled(true);
-                findViewById(R.id.startButton).setEnabled(false);
-                findViewById(R.id.normalButton).setEnabled(false);
-                findViewById(R.id.slowButton).setEnabled(false);
-
-            }
-        });
-        findViewById(R.id.normalButton).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mSensorManager.registerListener(mAccelLis, mAccel, SensorManager.SENSOR_DELAY_UI);
-                mSensorManager.registerListener(mGyroLis, mGyro, SensorManager.SENSOR_DELAY_UI);
-                mSensorManager.registerListener(mMagnetLis, mMagnet, SensorManager.SENSOR_DELAY_UI);
-
-                LogInit();
-
-                findViewById(R.id.stopButton).setEnabled(true);
-                findViewById(R.id.startButton).setEnabled(false);
-                findViewById(R.id.normalButton).setEnabled(false);
-                findViewById(R.id.slowButton).setEnabled(false);
-
-            }
-        });
         findViewById(R.id.stopButton).setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View view) {
+                spinner.setEnabled(true);
+                startBtn.setEnabled(true);
+                stopBtn.setEnabled(false);
+
                 mSensorManager.unregisterListener(mAccelLis);
                 mSensorManager.unregisterListener(mGyroLis);
                 mSensorManager.unregisterListener(mMagnetLis);
-
-                findViewById(R.id.stopButton).setEnabled(false);
-                findViewById(R.id.startButton).setEnabled(true);
-                findViewById(R.id.normalButton).setEnabled(true);
-                findViewById(R.id.slowButton).setEnabled(true);
 
                 try {
                     accelWriter.close();
@@ -135,7 +144,6 @@ public class MainActivity extends AppCompatActivity {
     public void onDestroy() {
         super.onDestroy();
 
-        Log.e("LOG", "onDestory()");
         mSensorManager.unregisterListener(mAccelLis);
         mSensorManager.unregisterListener(mGyroLis);
         mSensorManager.unregisterListener(mMagnetLis);
@@ -153,18 +161,22 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onSensorChanged(SensorEvent sensorEvent) {
+            float v1 = sensorEvent.values[0];
+            float v2 = sensorEvent.values[1];
+            float v3 = sensorEvent.values[2];
+            double v0 = (v1+v2+v3)/3;
             try {
                 switch (sensorEvent.sensor.getType()) {
                     case Sensor.TYPE_ACCELEROMETER:
-                        txt1.setText(String.format("%s\ntimestamp : %d\nv1 : %.4f\nv2 : %.4f\nv3 : %.4f", sensorEvent.sensor.getName(), sensorEvent.timestamp, sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]));
-                        accelWriter.write(String.format("%d, %f, %f, %f\n", sensorEvent.timestamp, sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]));
+                        txt1.setText(String.format("%s\nDelay : %s (MIN %s)\ntimestamp : %d\nv1 : %.4f\nv2 : %.4f\nv3 : %.4f", sensorEvent.sensor.getName(), ACCELEROMETER_DELAY, sensorEvent.sensor.getMinDelay() ,sensorEvent.timestamp, sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]));
+                        accelWriter.write(String.format("%d, %f, %f, %f, %f\n", sensorEvent.timestamp, sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2], v0));
                         break;
                     case Sensor.TYPE_GYROSCOPE:
-                        txt2.setText(String.format("%s\ntimestamp : %d\nv1 : %.4f\nv2 : %.4f\nv3 : %.4f", sensorEvent.sensor.getName(), sensorEvent.timestamp, sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]));
+                        txt2.setText(String.format("%s\nDelay : %s (MIN %s)\ntimestamp : %d\nv1 : %.4f\nv2 : %.4f\nv3 : %.4f", sensorEvent.sensor.getName(), GYROSCOPE_DELAY, sensorEvent.sensor.getMinDelay() ,sensorEvent.timestamp, sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]));
                         gyroWriter.write(String.format("%d, %f, %f, %f\n", sensorEvent.timestamp, sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]));
                         break;
                     case Sensor.TYPE_MAGNETIC_FIELD:
-                        txt3.setText(String.format("%s\ntimestamp : %d\nv1 : %.4f\nv2 : %.4f\nv3 : %.4f", sensorEvent.sensor.getName(), sensorEvent.timestamp, sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]));
+                        txt3.setText(String.format("%s\nDelay : %s (MIN %s)\ntimestamp : %d\nv1 : %.4f\nv2 : %.4f\nv3 : %.4f", sensorEvent.sensor.getName(), MAGNETOMETER_DELAY, sensorEvent.sensor.getMinDelay(), sensorEvent.timestamp, sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]));
                         magneticWriter.write(String.format("%d, %f, %f, %f\n", sensorEvent.timestamp, sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]));
                         break;
 
@@ -192,14 +204,6 @@ public class MainActivity extends AppCompatActivity {
                 logDirectory.mkdir();
             }
 
-            try {
-                accelWriter = new FileWriter(new File(logDirectory, "accel"+System.currentTimeMillis()+".csv"));
-                gyroWriter = new FileWriter(new File(logDirectory, "gyro"+System.currentTimeMillis()+".csv"));
-                magneticWriter = new FileWriter(new File(logDirectory, "magnetic"+ System.currentTimeMillis()+".csv"));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
         }
     }
     // Check if external storage is available for read and write
@@ -210,4 +214,5 @@ public class MainActivity extends AppCompatActivity {
         }
         return false;
     }
+
 }
